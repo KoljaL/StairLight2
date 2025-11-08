@@ -176,7 +176,11 @@ async function saveSettings() {
         await loadConfig();
       }
     } else {
-      showSaveStatus('Failed to save settings', false);
+      // add more info here
+      const errorData = await response.json();
+      // stringify errorData.message if exists
+      const errorMessage = errorData.message ? JSON.stringify(errorData.message) : 'Unknown error';
+      showSaveStatus('Failed to save settings: ' + errorMessage, false);
     }
   } catch (error) {
     console.error('Save failed:', error);

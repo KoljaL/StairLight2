@@ -36,6 +36,9 @@ SystemConfig *globalConfig = nullptr; // Pointer to main config
 bool wifiConnected = false;
 unsigned long lastWiFiCheck = 0;
 
+// ⚪ NOTE: Request body accumulator for chunked POST requests
+static String requestBody = "";
+
 // ⚪ NOTE: External functions from other modules (forward declarations)
 extern void setAccelThreshold(float threshold);
 extern void setDebounceDelay(unsigned long delayMs);
@@ -274,13 +277,51 @@ void setupRoutes()
   server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
       
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, data, len);
+      // 🔵 INFO: Accumulate chunked body data
+      if (index == 0) {
+        requestBody = "";  // Start new request
+        requestBody.reserve(total);
+      }
       
-      if (error) {
-        request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+      // Add this chunk to the body
+      for (size_t i = 0; i < len; i++) {
+        requestBody += (char)data[i];
+      }
+      
+      // 🔵 INFO: Wait until all chunks received
+      if (index + len != total) {
+#ifdef DEBUG
+        Serial.printf("WebServer: Received chunk %u/%u (%u bytes)\n", index + len, total, len);
+#endif
         return;
       }
+
+    // 🔵 INFO: All chunks received, now parse
+#ifdef DEBUG
+      Serial.printf("WebServer: Complete body received (%u bytes)\n", requestBody.length());
+      Serial.println(requestBody);
+#endif
+      
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, requestBody);
+      
+      if (error) {
+#ifdef DEBUG
+        Serial.print(F("WebServer: JSON parse error: "));
+        Serial.println(error.c_str());
+#endif
+        String errorMsg = "{\"error\":\"Invalid JSON\",\"message\":\"";
+        errorMsg += error.c_str();
+        errorMsg += "\"}";
+        request->send(400, "application/json", errorMsg);
+        return;
+      }
+
+#ifdef DEBUG
+      Serial.println(F("WebServer: Parsed config update:"));
+      serializeJsonPretty(doc, Serial);
+      Serial.println();
+#endif
       
       // 🔵 INFO: Update effect configurations
       if (doc["effects"].is<JsonObject>())
@@ -364,11 +405,16 @@ void setupRoutes()
       
       // 🔵 INFO: Save configuration to EEPROM
       bool saved = saveConfig(*globalConfig);
+
+#ifdef DEBUG
+      Serial.print(F("WebServer: Config save result: "));
+      Serial.println(saved ? "SUCCESS" : "FAILED");
+#endif
       
       if (saved) {
         request->send(200, "application/json", "{\"success\":true}");
       } else {
-        request->send(500, "application/json", "{\"error\":\"Failed to save config\"}");
+        request->send(500, "application/json", "{\"error\":\"Failed to save config\",\"message\":\"EEPROM write failed\"}");
       } });
 
   // ═══════════════════════════════════════════════════════════════════════
