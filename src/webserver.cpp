@@ -464,6 +464,58 @@ void setupRoutes()
       } else {
         request->send(400, "application/json", "{\"error\":\"Invalid effect type\"}");
       } });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🔵 INFO: POST /api/install/bottom - Toggle bottom sensor install mode
+  // ═══════════════════════════════════════════════════════════════════════
+
+  server.on("/api/install/bottom", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+              JsonDocument doc;
+              DeserializationError error = deserializeJson(doc, data, len);
+
+              if (error || !doc["enabled"].is<bool>())
+              {
+                request->send(400, "application/json", "{\"error\":\"Invalid request\"}");
+                return;
+              }
+
+              bool enabled = doc["enabled"];
+              setBottomSensorInstallMode(enabled);
+
+              request->send(200, "application/json", "{\"success\":true}");
+
+#ifdef DEBUG
+              Serial.print(F("WebServer: Bottom sensor install mode set to "));
+              Serial.println(enabled ? F("ON") : F("OFF"));
+#endif
+            });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🔵 INFO: POST /api/install/motion - Toggle motion sensor install mode
+  // ═══════════════════════════════════════════════════════════════════════
+
+  server.on("/api/install/motion", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+            {
+              JsonDocument doc;
+              DeserializationError error = deserializeJson(doc, data, len);
+
+              if (error || !doc["enabled"].is<bool>())
+              {
+                request->send(400, "application/json", "{\"error\":\"Invalid request\"}");
+                return;
+              }
+
+              bool enabled = doc["enabled"];
+              setMotionInstallMode(enabled);
+
+              request->send(200, "application/json", "{\"success\":true}");
+
+#ifdef DEBUG
+              Serial.print(F("WebServer: Motion sensor install mode set to "));
+              Serial.println(enabled ? F("ON") : F("OFF"));
+#endif
+            });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -561,6 +613,20 @@ bool initWebServer(SystemConfig &config)
     // 🔵 INFO: Fall back to AP mode if connection fails
     if (!wifiSuccess)
     {
+      // show all wifi networks for debugging
+      int n = WiFi.scanNetworks();
+      Serial.println(F("WebServer: Available WiFi networks:"));
+      for (int i = 0; i < n; ++i)
+      {
+        Serial.print("  ");
+        Serial.print(i + 1);
+        Serial.print(": ");
+        Serial.print(WiFi.SSID(i));
+        Serial.print(" (");
+        Serial.print(WiFi.RSSI(i));
+        Serial.println(" dBm)");
+      }
+
 #ifdef DEBUG
       Serial.println(F("WebServer: Home WiFi failed, starting AP mode"));
 #endif

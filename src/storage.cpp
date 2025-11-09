@@ -97,7 +97,7 @@ void getDefaultConfig(SystemConfig &config)
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Global System Defaults
   // ═══════════════════════════════════════════════════════════════════════
-  config.debugMode = false;
+  config.debugMode = true; // Debug mode ON by default
   config.globalBrightness = BRIGHTNESS_DEFAULT;
 
 #ifdef DEBUG

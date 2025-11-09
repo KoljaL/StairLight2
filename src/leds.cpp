@@ -570,3 +570,56 @@ EffectState getCurrentState()
 {
   return currentState;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔵 INFO: Installation Mode LED Effects
+// ═══════════════════════════════════════════════════════════════════════════
+
+void showBottomSensorInstall(bool triggered)
+{
+  // 🔵 INFO: Turn all LEDs on when sensor triggered, off otherwise
+  // ⚪ NOTE: Provides immediate visual feedback for sensor testing
+  uint8_t brightness = triggered ? 255 : 0;
+
+  for (uint8_t i = 0; i < LED_COUNT; i++)
+  {
+    uint16_t pwmValue = applyGamma(brightness);
+    pwm.setPWM(i, 0, pwmValue);
+  }
+}
+
+void showMotionInstall(uint8_t strength)
+{
+  // 🔵 INFO: VU meter effect - light up LEDs based on motion strength
+  // ⚪ NOTE: 0% = all off, 100% = all on
+  // ⚪ NOTE: Like an audio level meter on mixing console
+
+  // 🔵 INFO: Calculate how many LEDs to light up
+  uint8_t numLEDs = (strength * LED_COUNT) / 100;
+
+  // 🔵 INFO: Light up bottom LEDs proportionally to strength
+  for (uint8_t i = 0; i < LED_COUNT; i++)
+  {
+    uint8_t brightness;
+
+    if (i < numLEDs)
+    {
+      // 🔵 INFO: Full brightness for LEDs below threshold
+      brightness = 255;
+    }
+    else if (i == numLEDs && numLEDs < LED_COUNT)
+    {
+      // 🔵 INFO: Partial brightness for transition LED (smooth gradient)
+      uint8_t remainder = (strength * LED_COUNT) % 100;
+      brightness = (remainder * 255) / 100;
+    }
+    else
+    {
+      // 🔵 INFO: Off for LEDs above threshold
+      brightness = 0;
+    }
+
+    uint16_t pwmValue = applyGamma(brightness);
+    pwm.setPWM(i, 0, pwmValue);
+  }
+}

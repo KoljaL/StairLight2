@@ -29,6 +29,10 @@ unsigned long lastMotionTime = 0;
 // ⚪ NOTE: Bottom sensor state
 bool bottomSensorTriggered = false;
 
+// ⚪ NOTE: Installation mode flags (not stored in EEPROM)
+bool bottomSensorInstallMode = false;
+bool motionInstallMode = false;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 🔵 INFO: Sensor Initialization
 // ═══════════════════════════════════════════════════════════════════════════
@@ -39,11 +43,8 @@ bool initSensors()
   Serial.println(F("Sensors: Initializing..."));
 #endif
 
-  // 🔵 INFO: Initialize I2C bus for MPU6050
-  // ⚪ NOTE: Using pins defined in config.h
-  Wire.begin(PIN_SDA, PIN_SCL);
-
   // 🔵 INFO: Initialize MPU6050 accelerometer
+  // ⚪ NOTE: I2C (Wire) must already be initialized in main.cpp
   byte status = mpu.begin();
 
   // 🔵 INFO: Verify connection to MPU6050
@@ -285,4 +286,59 @@ void resetLastTrigger()
 #ifdef DEBUG
   Serial.println(F("Sensors: Last trigger timestamp reset"));
 #endif
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔵 INFO: Installation Mode Functions
+// ═══════════════════════════════════════════════════════════════════════════
+
+void setBottomSensorInstallMode(bool enabled)
+{
+  bottomSensorInstallMode = enabled;
+
+#ifdef DEBUG
+  Serial.print(F("Sensors: Bottom sensor install mode "));
+  Serial.println(enabled ? F("ENABLED") : F("DISABLED"));
+#endif
+}
+
+void setMotionInstallMode(bool enabled)
+{
+  motionInstallMode = enabled;
+
+#ifdef DEBUG
+  Serial.print(F("Sensors: Motion sensor install mode "));
+  Serial.println(enabled ? F("ENABLED") : F("DISABLED"));
+#endif
+}
+
+bool isBottomSensorInstallMode()
+{
+  return bottomSensorInstallMode;
+}
+
+bool isMotionInstallMode()
+{
+  return motionInstallMode;
+}
+
+uint8_t getMotionStrength()
+{
+  // 🔵 INFO: Calculate motion magnitude from baseline
+  float deltaX = abs(currentAccelX - accelBaselineX);
+  float deltaY = abs(currentAccelY - accelBaselineY);
+  float deltaZ = abs(currentAccelZ - accelBaselineZ);
+
+  float totalMotion = deltaX + deltaY + deltaZ;
+
+  // 🔵 INFO: Scale to 0-100% range
+  // ⚪ NOTE: Use 5x threshold as maximum for good visual range
+  float maxMotion = motionThreshold * 5.0f;
+  uint8_t percentage = (uint8_t)((totalMotion / maxMotion) * 100.0f);
+
+  // 🔵 INFO: Clamp to 0-100 range
+  if (percentage > 100)
+    percentage = 100;
+
+  return percentage;
 }

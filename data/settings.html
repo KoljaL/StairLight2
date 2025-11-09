@@ -69,6 +69,35 @@
         </div>
       </section>
 
+      <!-- Installation Mode -->
+      <section class="card">
+        <h2>🔧 Installation Mode</h2>
+        <p class="card-description">Test sensor placement during installation. All normal effects are disabled while in installation mode.</p>
+
+        <div class="form-group">
+          <label class="switch">
+            <input type="checkbox" id="bottomSensorInstall" onchange="toggleBottomSensorInstall()" />
+            <span class="slider"></span>
+          </label>
+          <label for="bottomSensorInstall">Bottom Sensor Test</label>
+          <p class="help-text">All LEDs light up when bottom sensor is triggered</p>
+        </div>
+
+        <div class="form-group">
+          <label class="switch">
+            <input type="checkbox" id="motionInstall" onchange="toggleMotionInstall()" />
+            <span class="slider"></span>
+          </label>
+          <label for="motionInstall">Motion Sensor Test</label>
+          <p class="help-text">VU meter display shows motion strength (0-100%)</p>
+        </div>
+
+        <div class="install-warning" id="installWarning" style="display: none">
+          <strong>⚠️ Installation Mode Active</strong>
+          <p>Normal motion detection is disabled. Turn off installation mode to resume normal operation.</p>
+        </div>
+      </section>
+
       <!-- WiFi Settings -->
       <section class="card">
         <h2>WiFi Configuration</h2>

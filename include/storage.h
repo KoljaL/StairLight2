@@ -38,9 +38,9 @@ struct EffectConfig
 
 struct WiFiConfig
 {
-  char ssid[MAX_SSID_LENGTH + 1];
-  char password[MAX_PASSWORD_LENGTH + 1];
-  bool useHomeWiFi; // If false, only use AP mode
+  char ssid[MAX_SSID_LENGTH + 1] = "MIA_2";                 // Default SSID
+  char password[MAX_PASSWORD_LENGTH + 1] = "12345mia12345"; // Default Password
+  bool useHomeWiFi;                                         // If false, only use AP mode
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

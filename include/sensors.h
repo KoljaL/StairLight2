@@ -95,4 +95,39 @@ SensorStatus getSensorStatus();
 */
 void resetLastTrigger();
 
+/*
+  Function: setBottomSensorInstallMode
+  Purpose:  Enable/disable installation mode for bottom sensor
+  Reason:   Allows testing sensor placement - lights up when triggered
+*/
+void setBottomSensorInstallMode(bool enabled);
+
+/*
+  Function: setMotionInstallMode
+  Purpose:  Enable/disable installation mode for motion sensor
+  Reason:   Allows testing sensor placement - VU meter effect based on motion strength
+*/
+void setMotionInstallMode(bool enabled);
+
+/*
+  Function: isBottomSensorInstallMode
+  Purpose:  Check if bottom sensor installation mode is active
+  Returns:  true if installation mode is active
+*/
+bool isBottomSensorInstallMode();
+
+/*
+  Function: isMotionInstallMode
+  Purpose:  Check if motion sensor installation mode is active
+  Returns:  true if installation mode is active
+*/
+bool isMotionInstallMode();
+
+/*
+  Function: getMotionStrength
+  Purpose:  Get current motion magnitude for VU meter display
+  Returns:  Motion strength as percentage (0-100)
+*/
+uint8_t getMotionStrength();
+
 #endif // SENSORS_H

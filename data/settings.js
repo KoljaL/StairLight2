@@ -223,3 +223,85 @@ function showSaveStatus(message, success) {
     saveStatus.classList.remove('show');
   }, 3000);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔵 INFO: Installation Mode Functions
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function toggleBottomSensorInstall() {
+  const checkbox = document.getElementById('bottomSensorInstall');
+  const enabled = checkbox.checked;
+
+  try {
+    const response = await fetch('/api/install/bottom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+
+    if (response.ok) {
+      updateInstallWarning();
+
+      // If enabled, disable the other installation mode
+      if (enabled) {
+        const motionCheckbox = document.getElementById('motionInstall');
+        if (motionCheckbox.checked) {
+          motionCheckbox.checked = false;
+          await toggleMotionInstall();
+        }
+      }
+    } else {
+      checkbox.checked = !enabled;
+      alert('Failed to toggle bottom sensor installation mode');
+    }
+  } catch (error) {
+    console.error('Error toggling bottom sensor install mode:', error);
+    checkbox.checked = !enabled;
+    alert('Error: ' + error.message);
+  }
+}
+
+async function toggleMotionInstall() {
+  const checkbox = document.getElementById('motionInstall');
+  const enabled = checkbox.checked;
+
+  try {
+    const response = await fetch('/api/install/motion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+
+    if (response.ok) {
+      updateInstallWarning();
+
+      // If enabled, disable the other installation mode
+      if (enabled) {
+        const bottomCheckbox = document.getElementById('bottomSensorInstall');
+        if (bottomCheckbox.checked) {
+          bottomCheckbox.checked = false;
+          await toggleBottomSensorInstall();
+        }
+      }
+    } else {
+      checkbox.checked = !enabled;
+      alert('Failed to toggle motion sensor installation mode');
+    }
+  } catch (error) {
+    console.error('Error toggling motion install mode:', error);
+    checkbox.checked = !enabled;
+    alert('Error: ' + error.message);
+  }
+}
+
+function updateInstallWarning() {
+  const bottomInstall = document.getElementById('bottomSensorInstall').checked;
+  const motionInstall = document.getElementById('motionInstall').checked;
+  const warning = document.getElementById('installWarning');
+
+  if (bottomInstall || motionInstall) {
+    warning.style.display = 'block';
+  } else {
+    warning.style.display = 'none';
+  }
+}

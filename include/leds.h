@@ -98,4 +98,18 @@ EffectState getCurrentState();
 */
 void setAllLEDs(uint8_t brightness);
 
+/*
+  Function: showBottomSensorInstall
+  Purpose:  Turn all LEDs on for bottom sensor installation mode
+  Reason:   Visual feedback when sensor is triggered during installation
+*/
+void showBottomSensorInstall(bool triggered);
+
+/*
+  Function: showMotionInstall
+  Purpose:  Display VU meter effect based on motion strength
+  Reason:   Visual feedback for motion sensor calibration (0-100%)
+*/
+void showMotionInstall(uint8_t strength);
+
 #endif // LEDS_H
