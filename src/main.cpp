@@ -39,6 +39,10 @@ void setup()
   Serial.begin(SERIAL_BAUD_RATE);
   delay(500); // Allow serial to stabilize
 
+  // 🔵 INFO: Disable watchdog to prevent boot loops during init
+  ESP.wdtDisable();
+  *((volatile uint32_t *)0x60000900) &= ~(1); // Hardware WDT off
+
 #ifdef DEBUG
   Serial.println(F("\n\n"));
   Serial.println(F("═════════════════════════════════════════════════════════"));
@@ -226,6 +230,9 @@ void setup()
 
   systemInitialized = true;
 
+  // 🔵 INFO: Re-enable watchdog now that init is complete
+  ESP.wdtEnable(5000); // 5 second timeout
+
 #ifdef DEBUG
   Serial.println();
   Serial.println(F("═════════════════════════════════════════════════════════"));
@@ -300,6 +307,9 @@ bool checkSchedule()
 void loop()
 {
   unsigned long currentTime = millis();
+
+  // 🔵 INFO: Feed watchdog to prevent reset
+  ESP.wdtFeed();
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Rate Limiting for Main Loop

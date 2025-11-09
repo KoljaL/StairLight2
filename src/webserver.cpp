@@ -590,12 +590,32 @@ bool initWebServer(SystemConfig &config)
 #endif
 
   // 🔵 INFO: Initialize LittleFS for web files
+  delay(100); // Give system time to stabilize
   if (!LittleFS.begin())
   {
 #ifdef DEBUG
     Serial.println(F("WebServer: ERROR - LittleFS mount failed"));
+    Serial.println(F("WebServer: Attempting to format..."));
 #endif
-    // 🟠 WARNING: Continue anyway, API will still work
+    // Try formatting and mounting again
+    if (LittleFS.format())
+    {
+#ifdef DEBUG
+      Serial.println(F("WebServer: Format successful, trying mount again..."));
+#endif
+      if (LittleFS.begin())
+      {
+#ifdef DEBUG
+        Serial.println(F("WebServer: LittleFS mounted after format"));
+#endif
+      }
+      else
+      {
+#ifdef DEBUG
+        Serial.println(F("WebServer: LittleFS mount failed even after format"));
+#endif
+      }
+    }
   }
   else
   {
