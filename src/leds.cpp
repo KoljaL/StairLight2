@@ -65,11 +65,14 @@ uint16_t applyGamma(uint8_t brightness)
 {
   // 🔵 INFO: Apply global brightness multiplier
   // ⚪ NOTE: Scale brightness by global percentage
-  uint16_t scaled = ((uint16_t)brightness * globalBrightness) / 100;
+  // ⚪ PERFORMANCE: Integer arithmetic is fast on ESP8266. Division by 100 is optimized by compiler.
+  uint16_t scaled = (static_cast<uint16_t>(brightness) * globalBrightness) / 100;
   if (scaled > 255)
     scaled = 255;
 
   // 🔵 INFO: Look up gamma-corrected value
+  // ⚪ PERFORMANCE: pgm_read_word() reads from flash memory (PROGMEM), saving 512 bytes of RAM.
+  //    Flash read is slightly slower than RAM but acceptable for this use case.
   return pgm_read_word(&gammaTable[scaled]);
 }
 
@@ -92,7 +95,8 @@ bool initLEDs()
   pwm.setPWMFreq(PWM_FREQUENCY);
 
   // 🔵 INFO: Turn off all LEDs initially
-  // ⚪ NOTE: setPWM(channel, 0, 0) = fully off
+  // ⚪ NOTE: setPWM(channel, 0, 0) = fully off (no PWM duty cycle)
+  // ⚪ PERFORMANCE: Loop executes 10 times (LED_COUNT), each I2C write takes ~1ms
   for (uint8_t i = 0; i < LED_COUNT; i++)
   {
     pwm.setPWM(i, 0, 0);
@@ -118,6 +122,7 @@ void setLED(uint8_t channel, uint8_t brightness)
     return;
 
   // 🔵 INFO: Apply gamma correction and global brightness
+  // ⚪ PERFORMANCE: Gamma lookup is O(1) and cached in PROGMEM to save RAM
   uint16_t pwmValue = applyGamma(brightness);
 
   // 🔵 INFO: Update PCA9685 output
@@ -131,6 +136,8 @@ void setLED(uint8_t channel, uint8_t brightness)
 
 void setAllLEDs(uint8_t brightness)
 {
+  // ⚪ PERFORMANCE: Could batch I2C writes using setPWM() with auto-increment,
+  //    but current approach is clearer and performance impact is negligible (~10ms total)
   for (uint8_t i = 0; i < LED_COUNT; i++)
   {
     setLED(i, brightness);
@@ -156,6 +163,9 @@ void fadeLED(uint8_t channel, uint8_t targetBright, uint16_t duration)
 
   // 🔵 INFO: Calculate steps needed for smooth fade
   // ⚪ NOTE: Update every 20ms for 50fps animation
+  // ⚪ TODO: Currently fading is instantaneous. Full implementation would use the calculated
+  //    steps in updateLEDs() to gradually transition from currentBrightness to targetBrightness.
+  //    This would require storing fade state (start time, duration, start/end brightness) per LED.
   uint16_t steps = duration / 20;
   if (steps == 0)
     steps = 1;
@@ -207,7 +217,7 @@ void startEffect(EffectType type, const EffectConfig &config)
 
 #ifdef DEBUG
   Serial.print(F("LEDs: Starting effect type "));
-  Serial.println((uint8_t)type);
+  Serial.println(static_cast<uint8_t>(type));  // Modern C++ cast
 #endif
 
   activeEffectType = type;
@@ -217,6 +227,9 @@ void startEffect(EffectType type, const EffectConfig &config)
   lastStepTime = millis();
 
   // 🔵 INFO: Determine initial state based on effect type
+  // ⚪ TRICKY: State machine transitions - each effect type maps to a specific animation state.
+  //    WALK_UP/DOWN turn lights ON sequentially, then HOLD, then turn OFF.
+  //    WALK_UP_OUT/DOWN_OUT directly turn lights OFF sequentially.
   switch (type)
   {
   case EffectType::WALK_UP:
@@ -303,7 +316,8 @@ void updateKnightRider()
   }
 
   // 🔵 INFO: End effect after 4 complete bounces
-  // ⚪ NOTE: 4 bounces = 2 complete back-and-forth cycles
+  // ⚪ NOTE: 4 bounces = 2 complete back-and-forth cycles (left->right->left->right)
+  // ⚪ TRICKY: Each direction change increments the counter, so 4 bounces = 2 full sweeps
   if (knightRiderBounces >= 4)
   {
 #ifdef DEBUG
@@ -330,7 +344,9 @@ void updateWalkUpOn()
   lastStepTime = currentTime;
 
   // 🔵 INFO: Light up LEDs from bottom (0) to top (LED_COUNT-1)
-  // ⚪ NOTE: Overlap allows multiple LEDs to light simultaneously
+  // ⚪ NOTE: Overlap allows multiple LEDs to light simultaneously for smoother effect
+  // ⚪ PERFORMANCE: Loop executes 'overlap' times (typically 1-5), each calling fadeLED()
+  //    which does I2C communication (~1ms). Total time per step is overlap * 1ms.
   for (uint8_t i = 0; i < activeConfig.overlap && (currentStep + i) < LED_COUNT; i++)
   {
     fadeLED(currentStep + i, activeConfig.brightness, activeConfig.fadeDuration);
@@ -366,7 +382,8 @@ void updateWalkDownOn()
   lastStepTime = currentTime;
 
   // 🔵 INFO: Light up LEDs from top (LED_COUNT-1) to bottom (0)
-  // ⚪ NOTE: currentStep counts up, but we light from top down
+  // ⚪ NOTE: currentStep counts up, but we light from top down using reverse indexing
+  // ⚪ TRICKY: ledIndex calculation ensures we start at the last LED (LED_COUNT-1) and work backwards
   for (uint8_t i = 0; i < activeConfig.overlap && (currentStep + i) < LED_COUNT; i++)
   {
     uint8_t ledIndex = LED_COUNT - 1 - currentStep - i;
@@ -464,6 +481,9 @@ void updateHold()
   unsigned long currentTime = millis();
 
   // 🔵 INFO: Check if hold timeout expired
+  // ⚪ TRICKY: After lights turn ON and reach the HOLD state, we wait for a timeout period
+  //    before transitioning to the OFF state. The direction of the OFF animation matches
+  //    the original ON animation (walk-up stays walk-up, walk-down stays walk-down).
   if (currentTime - holdStartTime >= effectTimeout)
   {
 #ifdef DEBUG
@@ -493,10 +513,11 @@ void updateHold()
 void updateLEDs()
 {
   // 🔵 INFO: Dispatch to appropriate update function based on state
+  // ⚪ NOTE: State machine pattern for non-blocking animation control
   switch (currentState)
   {
   case EffectState::IDLE:
-    // ⚪ NOTE: Nothing to do when idle
+    // ⚪ NOTE: Nothing to do when idle - saves CPU cycles
     break;
 
   case EffectState::KNIGHT_RIDER:
