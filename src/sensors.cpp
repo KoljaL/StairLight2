@@ -96,6 +96,7 @@ void calibrateMPU6050()
 
   // 🔵 INFO: Take multiple readings and average for stable baseline
   // ⚪ NOTE: 20 samples provides good accuracy without excessive delay
+  // ⚪ PERFORMANCE: Total calibration time is 20 samples * 10ms = 200ms
   constexpr uint8_t numSamples = 20;
   float sumX = 0;
   float sumY = 0;
@@ -113,12 +114,13 @@ void calibrateMPU6050()
   }
 
   // 🔵 INFO: Calculate baseline average
-  // ⚪ NOTE: MPU6050_light library returns values in g units
+  // ⚪ NOTE: MPU6050_light library returns values in g units (gravitational acceleration)
+  // ⚪ PERFORMANCE: Floating point division is acceptable here as this runs once during calibration
   constexpr float gravity = 9.81f; // m/s²
 
-  accelBaselineX = (sumX / (float)numSamples) * gravity;
-  accelBaselineY = (sumY / (float)numSamples) * gravity;
-  accelBaselineZ = (sumZ / (float)numSamples) * gravity;
+  accelBaselineX = (sumX / static_cast<float>(numSamples)) * gravity;
+  accelBaselineY = (sumY / static_cast<float>(numSamples)) * gravity;
+  accelBaselineZ = (sumZ / static_cast<float>(numSamples)) * gravity;
 
 #ifdef DEBUG
   Serial.println(F("Sensors: Calibration complete"));
@@ -164,6 +166,9 @@ MotionDirection checkMotion()
 {
   // 🔵 INFO: Check debounce timeout to prevent rapid re-triggering
   // ⚪ NOTE: Ignores new triggers within debounce window
+  // ⚪ TRICKY: Debouncing prevents sensor noise or rapid movements from triggering
+  //    multiple effects. The debounce window (default 200ms) creates a "dead time"
+  //    after each detection where new triggers are ignored.
   unsigned long currentTime = millis();
   if (currentTime - lastMotionTime < debounceDelay)
   {
@@ -195,7 +200,10 @@ MotionDirection checkMotion()
   float deltaZ = abs(currentAccelZ - accelBaselineZ);
 
   // 🔵 INFO: Calculate total motion magnitude
-  // ⚪ NOTE: Using simple sum instead of vector magnitude for speed
+  // ⚪ NOTE: Using simple sum instead of sqrt(x²+y²+z²) for speed - adequate for threshold comparison
+  // ⚪ PERFORMANCE: Avoids expensive sqrt() operation. Magnitude is only used for threshold comparison,
+  //    so the relative ordering is preserved. sqrt(a²+b²+c²) > threshold is equivalent to
+  //    (a+b+c) > adjusted_threshold for positive values.
   float totalMotion = deltaX + deltaY + deltaZ;
 
   // 🔵 INFO: Compare against threshold to determine if motion detected

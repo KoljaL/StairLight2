@@ -97,6 +97,8 @@ bool connectToWiFi(const char *ssid, const char *password)
   WiFi.begin(ssid, password);
 
   // 🔵 INFO: Wait for connection with timeout
+  // ⚪ PERFORMANCE: Uses delay() which blocks the CPU. This is acceptable during setup
+  //    as no other tasks need to run, but would be problematic in main loop.
   unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - startTime < WIFI_CONNECT_TIMEOUT)
   {
@@ -276,16 +278,20 @@ void setupRoutes()
 
   server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
             {
-      
       // 🔵 INFO: Accumulate chunked body data
+      // ⚪ TRICKY: HTTP POST bodies can arrive in multiple chunks for large payloads.
+      //    We must concatenate all chunks before parsing the complete JSON.
+      //    The 'index' parameter indicates position in total payload, 'total' is the final size.
       if (index == 0) {
         requestBody = "";  // Start new request
-        requestBody.reserve(total);
+        requestBody.reserve(total);  // Pre-allocate memory to avoid reallocation during concatenation
       }
       
+      // ⚪ PERFORMANCE: Character-by-character copy is inefficient but necessary for this API.
+      //    Modern C++ would use string_view or span, but Arduino String doesn't support it.
       // Add this chunk to the body
       for (size_t i = 0; i < len; i++) {
-        requestBody += (char)data[i];
+        requestBody += static_cast<char>(data[i]);  // Modern C++ cast instead of C-style
       }
       
       // 🔵 INFO: Wait until all chunks received
@@ -305,6 +311,8 @@ void setupRoutes()
       JsonDocument doc;
       DeserializationError error = deserializeJson(doc, requestBody);
       
+      // ⚪ PERFORMANCE: JSON parsing can be slow for large payloads. The ArduinoJson library
+      //    is optimized but still CPU-intensive. Consider limiting config update frequency.
       if (error) {
 #ifdef DEBUG
         Serial.print(F("WebServer: JSON parse error: "));
@@ -338,18 +346,19 @@ void setupRoutes()
       }
 
       // 🔵 INFO: Update WiFi configuration
+      // ⚪ NOTE: strncpy ensures null-termination safety when copying strings
       if (doc["wifi"].is<JsonObject>())
       {
         JsonObjectConst wifi = doc["wifi"];
         if (wifi["ssid"].is<const char *>())
         {
           strncpy(globalConfig->wifi.ssid, wifi["ssid"], MAX_SSID_LENGTH);
-          globalConfig->wifi.ssid[MAX_SSID_LENGTH] = '\0';
+          globalConfig->wifi.ssid[MAX_SSID_LENGTH] = '\0';  // Explicit null termination for safety
         }
         if (wifi["password"].is<const char *>())
         {
           strncpy(globalConfig->wifi.password, wifi["password"], MAX_PASSWORD_LENGTH);
-          globalConfig->wifi.password[MAX_PASSWORD_LENGTH] = '\0';
+          globalConfig->wifi.password[MAX_PASSWORD_LENGTH] = '\0';  // Explicit null termination for safety
         }
         if (wifi["useHomeWiFi"].is<bool>())
         {

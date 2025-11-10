@@ -293,6 +293,9 @@ bool checkSchedule()
   bool disabled = false;
 
   // ⚪ NOTE: Handle normal case (e.g., disable 8-20 = 8AM to 8PM)
+  // ⚪ TRICKY: Time range logic handles two cases:
+  //    1. Normal case: start < end (e.g., 8-20 means 8am-8pm same day)
+  //    2. Wraparound case: start > end (e.g., 20-8 means 8pm today through 8am tomorrow)
   if (startHour < endHour)
   {
     disabled = (currentHour >= startHour && currentHour < endHour);
@@ -302,7 +305,7 @@ bool checkSchedule()
   {
     disabled = (currentHour >= startHour || currentHour < endHour);
   }
-  // ⚪ NOTE: If startHour == endHour, scheduling effectively disabled
+  // ⚪ NOTE: If startHour == endHour, scheduling effectively disabled (no time range)
 
   return disabled;
 }
@@ -321,11 +324,13 @@ void loop()
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Rate Limiting for Main Loop
   // ⚪ NOTE: Prevents excessive CPU usage while maintaining responsiveness
+  // ⚪ PERFORMANCE: 50ms interval gives 20 Hz update rate - adequate for motion detection.
+  //    Higher rates would waste CPU without improving user experience.
   // ═══════════════════════════════════════════════════════════════════════
 
   if (currentTime - lastLoopTime < LOOP_UPDATE_INTERVAL)
   {
-    delay(10); // Short delay to yield CPU
+    delay(10); // Short delay to yield CPU to WiFi stack and background tasks
     return;
   }
 
