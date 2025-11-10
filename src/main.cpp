@@ -62,6 +62,13 @@ void setup()
 #endif
 
   initStorage();
+
+  // 🔵 INFO: TEMPORARY - Force factory reset to load new WiFi defaults
+  // ⚪ NOTE: Comment out this line after first successful WiFi connection
+  // resetToDefaults(sysConfig);
+  // saveConfig(sysConfig);
+  // Serial.println(F("  -> Factory reset applied - WiFi credentials loaded"));
+
   bool configLoaded = loadConfig(sysConfig);
 
   if (!configLoaded)

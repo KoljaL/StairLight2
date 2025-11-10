@@ -69,13 +69,13 @@ void getDefaultConfig(SystemConfig &config)
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: WiFi Configuration Defaults
-  // ⚪ NOTE: Start in AP mode for initial setup
+  // ⚪ NOTE: Set your WiFi credentials here for development
   // ═══════════════════════════════════════════════════════════════════════
-  strncpy(config.wifi.ssid, "", MAX_SSID_LENGTH);
-  strncpy(config.wifi.password, "", MAX_PASSWORD_LENGTH);
-  config.wifi.ssid[0] = '\0';
-  config.wifi.password[0] = '\0';
-  config.wifi.useHomeWiFi = false;
+  strncpy(config.wifi.ssid, "MIA_2", MAX_SSID_LENGTH);
+  strncpy(config.wifi.password, "12345mia12345", MAX_PASSWORD_LENGTH);
+  config.wifi.ssid[MAX_SSID_LENGTH] = '\0';
+  config.wifi.password[MAX_PASSWORD_LENGTH] = '\0';
+  config.wifi.useHomeWiFi = true;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Scheduling Configuration Defaults
