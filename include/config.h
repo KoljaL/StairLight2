@@ -125,8 +125,8 @@ constexpr uint32_t EEPROM_MAGIC_NUMBER = 0x5354414C; // "STAL" in hex
 // ═══════════════════════════════════════════════════════════════════════════
 
 constexpr unsigned long SERIAL_BAUD_RATE = 115200;
-constexpr unsigned long LOOP_UPDATE_INTERVAL = 50;     // Main loop rate in ms
-constexpr unsigned long STATUS_UPDATE_INTERVAL = 5000; // Debug output rate
+constexpr unsigned long LOOP_UPDATE_INTERVAL = 50;      // Main loop rate in ms
+constexpr unsigned long STATUS_UPDATE_INTERVAL = 60000; // Debug output rate
 
 // ⚪ NOTE: Maximum string lengths for WiFi credentials
 constexpr uint8_t MAX_SSID_LENGTH = 32;

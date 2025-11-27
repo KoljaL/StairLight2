@@ -138,10 +138,10 @@ void setAllLEDs(uint8_t brightness)
     currentBrightness[i] = brightness;
   }
 
-#ifdef DEBUG
-  Serial.print(F("LEDs: All LEDs set to brightness "));
-  Serial.println(brightness);
-#endif
+  // #ifdef DEBUG
+  //   Serial.print(F("LEDs: All LEDs set to brightness "));
+  //   Serial.println(brightness);
+  // #endif
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -270,16 +270,27 @@ void updateKnightRider()
   // 🔵 INFO: Turn off all LEDs
   setAllLEDs(0);
 
-  // 🔵 INFO: Light up current position with trail effect
-  // ⚪ NOTE: Creates sweeping light effect with fade trail
-  if (knightRiderPosition > 0)
+  // 🔵 INFO: Light up current position with 3-LED window effect
+  // ⚪ NOTE: Center LED at 100%, side LEDs at 25% (adapted from Knight Rider example)
+
+  // Handle edge case: position 0 (bottom)
+  if (knightRiderPosition == 0)
   {
-    setLED(knightRiderPosition - 1, 30); // Dim trail
+    setLED(knightRiderPosition, 100);    // Center at 100%
+    setLED(knightRiderPosition + 1, 25); // Side at 25%
   }
-  setLED(knightRiderPosition, 100); // Bright center
-  if (knightRiderPosition < LED_COUNT - 1)
+  // Handle edge case: last position (top)
+  else if (knightRiderPosition == LED_COUNT - 1)
   {
-    setLED(knightRiderPosition + 1, 30); // Dim trail
+    setLED(knightRiderPosition - 1, 25); // Side at 25%
+    setLED(knightRiderPosition, 100);    // Center at 100%
+  }
+  // Normal case: middle positions
+  else
+  {
+    setLED(knightRiderPosition - 1, 25); // Left side at 25%
+    setLED(knightRiderPosition, 100);    // Center at 100%
+    setLED(knightRiderPosition + 1, 25); // Right side at 25%
   }
 
   // 🔵 INFO: Move to next position
