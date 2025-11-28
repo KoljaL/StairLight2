@@ -152,6 +152,9 @@ bool saveConfig(const SystemConfig &config)
 {
   // 🔵 INFO: Write entire configuration structure to EEPROM
   // ⚪ NOTE: EEPROM.put() handles multi-byte writes and wear leveling
+  // ⚪ PERFORMANCE: EEPROM writes are slow (~3ms per byte) but acceptable since
+  //    configuration saves are infrequent (typically only via web interface).
+  // ⚪ WARNING: EEPROM has limited write cycles (~100,000). Avoid frequent saves.
   EEPROM.put(EEPROM_CONFIG_START, config);
 
   // 🔵 INFO: Commit changes to flash memory
