@@ -8,6 +8,7 @@
 #include "sensors.h"
 #include "leds.h"
 #include "webserver.h"
+#include "serialcmd.h"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 🔵 INFO: Global System State
@@ -179,6 +180,51 @@ void setup()
   setDebounceDelay(sysConfig.sensor.debounceDelay);
   setEffectTimeout(sysConfig.sensor.effectTimeout);
 
+  // 🔵 INFO: Check for AP Mode override using bottom sensor
+  // ⚪ NOTE: Hold bottom sensor during boot to force AP mode for WiFi setup
+#ifdef DEBUG
+  Serial.println(F("  -> Checking for AP mode override..."));
+  Serial.println(F("     (Hold bottom sensor for 3 seconds to enter setup mode)"));
+#endif
+
+  bool forceAPMode = false;
+  unsigned long apCheckStart = millis();
+  int activeCount = 0;
+
+  while (millis() - apCheckStart < 3000)
+  {
+    updateSensors();
+    SensorStatus sensorStatus = getSensorStatus();
+
+    if (sensorStatus.bottomSensorActive)
+    {
+      activeCount++;
+      if (activeCount >= 5) // Sensor active for ~250ms
+      {
+        forceAPMode = true;
+#ifdef DEBUG
+        Serial.println(F("     AP mode override ACTIVATED!"));
+#endif
+        break;
+      }
+    }
+    else
+    {
+      activeCount = 0;
+    }
+
+    delay(50);
+  }
+
+  if (forceAPMode)
+  {
+    // Override WiFi settings to force AP mode
+    sysConfig.wifi.useHomeWiFi = false;
+#ifdef DEBUG
+    Serial.println(F("  -> Forcing Access Point mode for WiFi configuration"));
+#endif
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Initialize Web Server
   // ⚪ NOTE: WiFi and HTTP server for configuration interface
@@ -248,6 +294,13 @@ void setup()
   Serial.println(F("═════════════════════════════════════════════════════════"));
   Serial.println();
 #endif
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🔵 INFO: Initialize Serial Command Interface
+  // ⚪ NOTE: Interactive configuration via keyboard when connected via USB
+  // ═══════════════════════════════════════════════════════════════════════
+
+  initSerialCmd();
 
 // 🔵 INFO: Run Knight Rider startup animation
 #ifdef DEBUG
@@ -330,6 +383,13 @@ void loop()
   }
 
   lastLoopTime = currentTime;
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🔵 INFO: Update Serial Command Interface
+  // ⚪ NOTE: Process keyboard input for interactive configuration
+  // ═══════════════════════════════════════════════════════════════════════
+
+  updateSerialCmd(sysConfig);
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Update Web Server

@@ -26,8 +26,11 @@ unsigned long debounceDelay = SENSOR_DEBOUNCE_MS;
 // ⚪ NOTE: Timing for debounce logic
 unsigned long lastMotionTime = 0;
 
-// ⚪ NOTE: Bottom sensor state
+// ⚪ NOTE: Bottom sensor state and debouncing
 bool bottomSensorTriggered = false;
+bool lastBottomSensorState = false;
+unsigned long lastBottomSensorChange = 0;
+const unsigned long BOTTOM_SENSOR_DEBOUNCE_MS = 50; // 50ms debounce for digital input
 
 // ⚪ NOTE: Installation mode flags (not stored in EEPROM)
 bool bottomSensorInstallMode = false;
@@ -151,9 +154,24 @@ void updateSensors()
   currentAccelY = mpu.getAccY() * gravity;
   currentAccelZ = mpu.getAccZ() * gravity;
 
-  // 🔵 INFO: Read bottom sensor digital input
+  // 🔵 INFO: Read bottom sensor with debouncing
   // ⚪ NOTE: LOW = triggered (object detected), HIGH = no detection
-  bottomSensorTriggered = (digitalRead(PIN_BOTTOM_SENSOR) == LOW);
+  bool currentSensorState = (digitalRead(PIN_BOTTOM_SENSOR) == LOW);
+
+  // 🔵 INFO: Debounce logic - only accept state changes after stable period
+  unsigned long currentTime = millis();
+
+  if (currentSensorState != lastBottomSensorState)
+  {
+    // State changed - reset debounce timer
+    lastBottomSensorChange = currentTime;
+    lastBottomSensorState = currentSensorState;
+  }
+  else if (currentTime - lastBottomSensorChange >= BOTTOM_SENSOR_DEBOUNCE_MS)
+  {
+    // State has been stable for debounce period - accept it
+    bottomSensorTriggered = currentSensorState;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

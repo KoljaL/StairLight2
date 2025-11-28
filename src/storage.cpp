@@ -31,40 +31,40 @@ void getDefaultConfig(SystemConfig &config)
   // 🔵 INFO: Walk-Up Effect Defaults (bottom sensor triggered)
   // ⚪ NOTE: Lights turn on from bottom to top
   // ═══════════════════════════════════════════════════════════════════════
-  config.walkUp.stepDelay = 200;
-  config.walkUp.fadeDuration = 300;
-  config.walkUp.brightness = 80;
-  config.walkUp.overlap = 2;
+  config.walkUp.stepDelay = 150;
+  config.walkUp.fadeDuration = 500;
+  config.walkUp.brightness = 60;
+  config.walkUp.overlap = 3;
   config.walkUp.enabled = true;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Walk-Down Effect Defaults (top MPU6050 triggered)
   // ⚪ NOTE: Lights turn on from top to bottom
   // ═══════════════════════════════════════════════════════════════════════
-  config.walkDown.stepDelay = 200;
-  config.walkDown.fadeDuration = 300;
-  config.walkDown.brightness = 80;
-  config.walkDown.overlap = 2;
+  config.walkDown.stepDelay = 150;
+  config.walkDown.fadeDuration = 500;
+  config.walkDown.brightness = 60;
+  config.walkDown.overlap = 3;
   config.walkDown.enabled = true;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Walk-Up-Out Effect Defaults (fade out bottom to top)
   // ⚪ NOTE: After timeout, lights turn off from bottom to top
   // ═══════════════════════════════════════════════════════════════════════
-  config.walkUpOut.stepDelay = 150;
-  config.walkUpOut.fadeDuration = 400;
+  config.walkUpOut.stepDelay = 100;
+  config.walkUpOut.fadeDuration = 600;
   config.walkUpOut.brightness = 0; // Not used for off effect
-  config.walkUpOut.overlap = 1;
+  config.walkUpOut.overlap = 2;
   config.walkUpOut.enabled = true;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔵 INFO: Walk-Down-Out Effect Defaults (fade out top to bottom)
   // ⚪ NOTE: After timeout, lights turn off from top to bottom
   // ═══════════════════════════════════════════════════════════════════════
-  config.walkDownOut.stepDelay = 150;
-  config.walkDownOut.fadeDuration = 400;
+  config.walkDownOut.stepDelay = 100;
+  config.walkDownOut.fadeDuration = 600;
   config.walkDownOut.brightness = 0; // Not used for off effect
-  config.walkDownOut.overlap = 1;
+  config.walkDownOut.overlap = 2;
   config.walkDownOut.enabled = true;
 
   // ═══════════════════════════════════════════════════════════════════════

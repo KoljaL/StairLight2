@@ -190,12 +190,14 @@ async function saveConfig() {
         },
         walkUpOut: {
           enabled: document.getElementById('walkUpOutEnabled').checked,
+          brightness: 100, // Fixed brightness for fade-out effects
           stepDelay: parseInt(document.getElementById('walkUpOutSpeed').value),
           fadeDuration: parseInt(document.getElementById('walkUpOutFade').value),
           overlap: parseInt(document.getElementById('walkUpOutOverlap').value),
         },
         walkDownOut: {
           enabled: document.getElementById('walkDownOutEnabled').checked,
+          brightness: 100, // Fixed brightness for fade-out effects
           stepDelay: parseInt(document.getElementById('walkDownOutSpeed').value),
           fadeDuration: parseInt(document.getElementById('walkDownOutFade').value),
           overlap: parseInt(document.getElementById('walkDownOutOverlap').value),
@@ -212,8 +214,10 @@ async function saveConfig() {
 
     if (response.ok) {
       showSaveStatus('Configuration saved successfully!', true);
-      // 🔵 INFO: Reload config to sync with device
-      await loadConfig();
+      // 🔵 INFO: Reload config after a short delay to allow EEPROM write to complete
+      setTimeout(async () => {
+        await loadConfig();
+      }, 500);
     } else {
       showSaveStatus('Failed to save configuration', false);
     }

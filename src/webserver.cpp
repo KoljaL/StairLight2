@@ -126,6 +126,31 @@ bool connectToWiFi(const char *ssid, const char *password)
     wifiConnected = false;
 #ifdef DEBUG
     Serial.println(F("WebServer: WiFi connection failed"));
+    // give reason for failure
+    wl_status_t status = WiFi.status();
+    Serial.print(F("  - Status code: "));
+    Serial.println(status);
+
+    switch (status)
+    {
+    case WL_NO_SSID_AVAIL:
+      Serial.println(F("  - Reason: SSID not available"));
+      break;
+    case WL_CONNECT_FAILED:
+      Serial.println(F("  - Reason: Connection failed (wrong password?)"));
+      break;
+    case WL_CONNECTION_LOST:
+      Serial.println(F("  - Reason: Connection lost"));
+      break;
+    case WL_DISCONNECTED:
+      Serial.println(F("  - Reason: Disconnected"));
+      break;
+    default:
+      Serial.print(F("  - Reason: Unknown (status code "));
+      Serial.print(status);
+      Serial.println(F(")"));
+      break;
+    }
 #endif
     return false;
   }
@@ -696,12 +721,14 @@ void updateWebServer()
   ArduinoOTA.handle();
 
   // 🔵 INFO: Check WiFi connection periodically and reconnect if needed
+  // ⚪ NOTE: Skip reconnection attempts while effects are running to avoid disruption
   unsigned long currentTime = millis();
   if (currentTime - lastWiFiCheck > WIFI_RECONNECT_INTERVAL)
   {
     lastWiFiCheck = currentTime;
 
-    if (globalConfig->wifi.useHomeWiFi && WiFi.status() != WL_CONNECTED)
+    // 🔵 INFO: Only attempt reconnection when system is idle
+    if (!isEffectRunning() && globalConfig->wifi.useHomeWiFi && WiFi.status() != WL_CONNECTED)
     {
 #ifdef DEBUG
       Serial.println(F("WebServer: WiFi disconnected, attempting reconnect..."));

@@ -28,6 +28,12 @@ uint8_t globalBrightness = BRIGHTNESS_DEFAULT;
 uint16_t targetBrightness[LED_COUNT] = {0};
 uint16_t currentBrightness[LED_COUNT] = {0};
 
+// ⚪ NOTE: Fade tracking for smooth transitions
+unsigned long fadeStartTime[LED_COUNT] = {0};
+uint16_t fadeStartBrightness[LED_COUNT] = {0};
+uint16_t fadeDuration[LED_COUNT] = {0};
+bool isFading[LED_COUNT] = {false};
+
 // ⚪ NOTE: Knight Rider effect variables
 bool knightRiderDirection = true; // true = forward, false = backward
 uint8_t knightRiderPosition = 0;
@@ -154,20 +160,74 @@ void fadeLED(uint8_t channel, uint8_t targetBright, uint16_t duration)
   if (channel >= LED_COUNT)
     return;
 
-  // 🔵 INFO: Calculate steps needed for smooth fade
-  // ⚪ NOTE: Update every 20ms for 50fps animation
-  uint16_t steps = duration / 20;
-  if (steps == 0)
-    steps = 1;
+  // 🔵 INFO: If duration is 0 or very short, set immediately
+  if (duration < 20)
+  {
+    currentBrightness[channel] = targetBright;
+    targetBrightness[channel] = targetBright;
+    isFading[channel] = false;
+    setLED(channel, targetBright);
+    return;
+  }
 
-  // ⚪ NOTE: Store target for completion check
+  // 🔵 INFO: Initialize fade parameters
+  fadeStartTime[channel] = millis();
+  fadeStartBrightness[channel] = currentBrightness[channel];
   targetBrightness[channel] = targetBright;
+  fadeDuration[channel] = duration;
+  isFading[channel] = true;
+}
 
-  // 🔵 INFO: For now, just set immediately (smooth fade happens in updateLEDs)
-  // ⚪ NOTE: Full fade implementation would use state machine in updateLEDs()
-  // ⚪ NOTE: Increment calculation removed as it's not yet used
-  currentBrightness[channel] = targetBright;
-  setLED(channel, targetBright);
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔵 INFO: Update Fading LEDs
+// ⚪ NOTE: Process smooth brightness transitions for all LEDs
+// ═══════════════════════════════════════════════════════════════════════════
+
+void updateFades()
+{
+  unsigned long currentTime = millis();
+
+  for (uint8_t i = 0; i < LED_COUNT; i++)
+  {
+    // Skip LEDs that aren't fading
+    if (!isFading[i])
+      continue;
+
+    // Calculate elapsed time since fade started
+    unsigned long elapsed = currentTime - fadeStartTime[i];
+
+    // Check if fade is complete
+    if (elapsed >= fadeDuration[i])
+    {
+      currentBrightness[i] = targetBrightness[i];
+      isFading[i] = false;
+      setLED(i, targetBrightness[i]);
+    }
+    else
+    {
+      // Calculate current brightness using linear interpolation
+      int16_t startBright = fadeStartBrightness[i];
+      int16_t endBright = targetBrightness[i];
+      int16_t delta = endBright - startBright;
+
+      // Apply fade progress (0.0 to 1.0)
+      int16_t newBrightness = startBright + ((delta * (int32_t)elapsed) / fadeDuration[i]);
+
+      // Clamp to valid range
+      if (newBrightness < 0)
+        newBrightness = 0;
+      if (newBrightness > 255)
+        newBrightness = 255;
+
+      // 🔵 INFO: Only update if brightness changed to reduce PWM updates
+      // ⚪ NOTE: This prevents flicker from unnecessary rapid updates
+      if (newBrightness != currentBrightness[i])
+      {
+        currentBrightness[i] = newBrightness;
+        setLED(i, newBrightness);
+      }
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -503,11 +563,14 @@ void updateHold()
 
 void updateLEDs()
 {
+  // 🔵 INFO: Always update fading LEDs for smooth transitions
+  updateFades();
+
   // 🔵 INFO: Dispatch to appropriate update function based on state
   switch (currentState)
   {
   case EffectState::IDLE:
-    // ⚪ NOTE: Nothing to do when idle
+    // ⚪ NOTE: Fades can still complete in idle state
     break;
 
   case EffectState::KNIGHT_RIDER:
